@@ -1,29 +1,72 @@
 from collections import defaultdict
 import ast2
-from SymbolTable import SymbolTable, VariableSymbol, VectorType
+from SymbolTable import SymbolTable, VectorType
 
+ttype = defaultdict(lambda: defaultdict(lambda: defaultdict(str)))
 
-types = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
-opers = ['+', '-', '*', '/']
-mat_opers = ['.+', '.-', '.*', './']
-rel_opers = ['<', '>', '>=', '<=', '==', '!=']
-ass_opers = ['+=', '-=', '*=', '/=']
+ttype['+']["int"]["int"] = "int"
+ttype['-']["int"]["int"] = "int"
+ttype['*']["int"]["int"] = "int"
+ttype['/']["int"]["int"] = "int"
+ttype[".+"]["int"]["int"] = "int"
+ttype[".-"]["int"]["int"] = "int"
+ttype[".*"]["int"]["int"] = "int"
+ttype["./"]["int"]["int"] = "int"
+ttype['<']["int"]["int"] = "logic"
+ttype['>']["int"]["int"] = "logic"
+ttype["<="]["int"]["int"] = "logic"
+ttype[">="]["int"]["int"] = "logic"
+ttype["=="]["int"]["int"] = "logic"
+ttype["!="]["int"]["int"] = "logic"
 
-for op in opers + ass_opers:
-    types[op]['int']['float'] = 'float'
-    types[op]['float']['int'] = 'float'
-    types[op]['float']['float'] = 'float'
-    types[op]['int']['int'] = 'int'
+ttype['+']["int"]["float"] = "float"
+ttype['-']["int"]["float"] = "float"
+ttype['*']["int"]["float"] = "float"
+ttype['/']["int"]["float"] = "float"
+ttype[".+"]["int"]["float"] = "float"
+ttype[".-"]["int"]["float"] = "float"
+ttype[".*"]["int"]["float"] = "float"
+ttype["./"]["int"]["float"] = "float"
+ttype['<']["int"]["float"] = "logic"
+ttype['>']["int"]["float"] = "logic"
+ttype["<="]["int"]["float"] = "logic"
+ttype[">="]["int"]["float"] = "logic"
+ttype["=="]["int"]["float"] = "logic"
+ttype["!="]["int"]["float"] = "logic"
 
-for op in opers[0:3] + ass_opers[0:3]:
-    types[op]['vector']['vector'] = 'vector'
+ttype['+']["float"]["int"] = "float"
+ttype['-']["float"]["int"] = "float"
+ttype['*']["float"]["int"] = "float"
+ttype['/']["float"]["int"] = "float"
+ttype[".+"]["float"]["int"] = "float"
+ttype[".-"]["float"]["int"] = "float"
+ttype[".*"]["float"]["int"] = "float"
+ttype["./"]["float"]["int"] = "float"
+ttype['<']["float"]["int"] = "logic"
+ttype['>']["float"]["int"] = "logic"
+ttype["<="]["float"]["int"] = "logic"
+ttype[">="]["float"]["int"] = "logic"
+ttype["=="]["float"]["int"] = "logic"
+ttype["!="]["float"]["int"] = "logic"
 
-types['\'']['vector'][None] = 'vector'
-types['-']['vector'][None] = 'vector'
-types['-']['int'][None] = 'int'
-types['-']['float'][None] = 'float'
+ttype['+']["float"]["float"] = "float"
+ttype['-']["float"]["float"] = "float"
+ttype['*']["float"]["float"] = "float"
+ttype['/']["float"]["float"] = "float"
+ttype[".+"]["float"]["float"] = "float"
+ttype[".-"]["float"]["float"] = "float"
+ttype[".*"]["float"]["float"] = "float"
+ttype["./"]["float"]["float"] = "float"
+ttype['<']["float"]["float"] = "logic"
+ttype['>']["float"]["float"] = "logic"
+ttype["<="]["float"]["float"] = "logic"
+ttype[">="]["float"]["float"] = "logic"
+ttype["=="]["float"]["float"] = "logic"
+ttype["!="]["float"]["float"] = "logic"
 
-symtab = SymbolTable(None, "Symtab")
+castable_operations = ['/', '+', '-', '*', '>', '<', ">=", "<=", "==", "!="]
+castable_matrix_operations = [".+", ".-", ".*", "./"]
+castable_types = ["int", "float"]
 
 
 class NodeVisitor(object):
@@ -51,15 +94,6 @@ class NodeVisitor(object):
     #        self.visit(child)
 
 
-def print_error(text, node.line_no):
-    print(str(node.line_no) + ': ' + text)
-
-
-class ErrorType:
-    def __str__(self):
-        return 'Error'
-
-
 class TypeChecker(NodeVisitor):
     def __init__(self):
         self.symbol_table = SymbolTable(None, 'program')
@@ -70,66 +104,41 @@ class TypeChecker(NodeVisitor):
             self.visit(inst)
 
     def visit_Print(self, node):
-        self.visit(node.params[0])
+        self.visit(node.arg[0])
 
     def visit_Assign(self, node):
         type2 = self.visit(node.right)
-        if isinstance(type2, ErrorType):
-            return type2
-
-        if node.op == "=":
-            self.symbol_table.put(node.left.name, VariableSymbol(node.left.id, type2))
-
-        if node.op != "=":
+        if node.op == '=':
+            self.symbol_table.put(node.left.name, type2)
+        else:
             type1 = self.visit(node.left)
-            result_type = types[node.op][str(type1)][str(type2)]
-            if result_type is not None:
-                if result_type == 'vector':
-                    if isinstance(type1, VectorType) and isinstance(type2, VectorType):
-                        if type1.type != type2.type:
-                            print("[Semantic Error at line {}] Different types in matrices!".format(node.line))
-                            return ErrorType()
-                        if node.op == '*=':
-                            if type1.dims != 2:
-                                print("[Semantic Error at line {}] Multiplying only for matrices!".format(node.line))
-                                return ErrorType()
-                            elif type1.sizes[1] != type2.sizes[0]:
-                                print("[Semantic Error at line {}] Incorrect sizes for multiplication!".format(node.line))
-                                return ErrorType()
-                            else:
-                                result_type = VectorType(type1.dims, [type1.sizes[0], type2.sizes[1]], type1.type)
-                        else:
-                            if type1.sizes != type2.sizes:
-                                print("[Semantic Error at line {}] Different sizes of operands!".format(node.line))
-                                return ErrorType()
-                            else:
-                                result_type = type1
-                return result_type
+            if type1 == type2:
+                return
+            elif type1 == "int" and type2 == "float":
+                self.symbol_table.put(node.left.name, type2)
             else:
-                print("[Semantic Error at line {}] Incorrect types of operands!".format(node.line))
-                return ErrorType()
+                print("Error at line {0}: Variables of incompatible types".format(node.line))
 
     def visit_Arrassign(self, node):
-        pass
+        if len(node.arr) != 2:
+            print("Error at line {0}: Access array must be of length 2".format(node.line))
+            return None
+        arr_type0 = self.visit(node.arr[0])
+        arr_type1 = self.visit(node.arr[1])
+        if arr_type0 != "int" or arr_type1 != "int":
+            print("Error at line {0}: Access array elements must be integers".format(node.line))
+            return None
+
+        m_type = self.visit(node.left.mat[0][0])
+        type2 = self.visit(node.right)
+        if node.op == '=':
+            self.symbol_table.put(node.left.name, type2)
+        e
+            else:
+                print("Error at line {0}: Variables of incompatible types".format(node.line))
 
     def visit_Access(self, node):
-        if len(node.arr) > 2:
-            print("[Semantic Error at line {}] Too many dimensions provided!".format(node.line))
-            return ErrorType()
-
-        var_type = self.visit(node.id)
-        if str(var_type) != 'vector':
-            print("[Semantic Error at line {}] Variable not a matrix!".format(node.line))
-            return ErrorType()
-
-        if isinstance(node.arr[0], int) and isinstance(node.arr[1], int):
-            if node.arr[0] >= var_type.sizes[0] or node.arr[1] >= var_type.sizes[1] or node.arr[0] < 0 or node.arr[1] < 0:
-                print("[Semantic Error at line {}] Index out of bounds!".format(node.line))
-                return ErrorType()
-            return var_type.type
-        else:
-            print("[Semantic Error at line {}] Indices must be integers".format(node.line))
-            return ErrorType()
+        pass
 
     def visit_Binop(self, node):
         pass
@@ -142,77 +151,115 @@ class TypeChecker(NodeVisitor):
 
     def visit_IfStatement(self, node):
         type1 = self.visit(node.cond)
-        if type1 != "logic":
-            # error
-            print_error('range must to be int', node.line_no)
-        symtab.pushScope("if")
-        self.visit(node.instr)
-        symtab.popScope()
+        if type1 == "bool":
+            self.symbol_table.push_scope("ifscope")
+            for inst in node.instr:
+                self.visit(inst)
+            self.symbol_table.pop_scope()
+        else:
+            print("Error at line {0}: Condition in if statement must be boolean".format(node.line))
 
     def visit_IfElseStatement(self, node):
         type1 = self.visit(node.cond)
-        if type1 != "logic":
-            # error
-            print_error('range must to be int', node.line_no)
-        symtab.pushScope("if")
-        self.visit(node.instr)
-        symtab.popScope()
+        if type1 == "bool":
+            self.symbol_table.push_scope("ifscope")
+            for inst in node.instr:
+                self.visit(inst)
+            self.symbol_table.pop_scope()
+            self.symbol_table.push_scope("elsescope")
+            for inst in node.else_instr:
+                self.visit(inst)
+            self.symbol_table.pop_scope()
+        else:
+            print("Error at line {0}: Condition in if statement must be boolean".format(node.line))
 
-        symtab.pushScope("else")
-        self.visit(node.else_instr)
-        symtab.popScope()
 
     def visit_WhileLoop(self, node):
         type1 = self.visit(node.cond)
-        if type1 != "logic":
-            # error
-            print_error('range must to be int', node.line_no)
-        symtab.pushScope("loop")
-        self.visit(node.instr)
-        symtab.popScope()
+        if type1 == "bool":
+            self.symbol_table.push_scope("loop")
+            self.visit(node.instr)
+            self.symbol_table.pop_scope()
+        else:
+            print("Error at line {0}: Condition in while loop must be boolean".format(node.line))
 
     def visit_ForLoop(self, node):
-        type1 = self.visit(node.limit)
-        if type1 != "int":
-            # error
-            print_error('range must to be int', node.line_no)
-        symtab.put(node.expr.name, type1)
-        symtab.pushScope("loop")
-        self.visit(node.instr)
-        symtab.popScope()
+        type1 = self.visit(node.expr)
+        type2 = self.visit(node.limit)
+        if type1 == "int" and type2 == "int":
+            self.symbol_table.push_scope("loop")
+            self.symbol_table.put(node.id.name, type1)
+            self.visit(node.instr)
+            self.symbol_table.pop_scope()
+        else:
+            print("Error at line {0}: For loop's range must be integers ".format(node.line))
 
     def visit_Matrix(self, node):
-        pass
+        rows_count = len(node.mat)
+        row_len = len(node.mat[0])
+        m_type = self.visit(node.mat[0][0])
 
-    def visit_Execute(self, node):
-        self.visit(node.instr)  # nie jestem pewny
+        for row in node.mat:
+            if len(row) != row_len:
+                print("Error at line {0}: Matrix rows must have the same length ".format(node.line))
+            for element in row:
+                if self.visit(element) != m_type:
+                    print("Error at line {0}: Matrix elements must be of the same type".format(node.line))
+
+        return VectorType(width=row_len, height=rows_count, type=m_type)
+
+    def visit_Scope(self, node):
+        self.symbol_table.push_scope("scope")
+        for inst in node.instr:
+            self.visit(inst)
+        self.symbol_table.pop_scope()
 
     def visit_BreakStatement(self, node):
-        loop = symtab.getScope("loop")
-        if not loop:
-            print_error('continue must be used in loop', node.line_no)
+        loop_scope = self.symbol_table.get_scope("loop")
+        if loop_scope is None:
+            print("Error at line {0}: Break ouside of loop scope".format(node.line))
 
     def visit_ContinueStatement(self, node):
-        loop = symtab.getScope("loop")
-        if not loop:
-            print_error('continue must be used in loop', node.line_no)
+        loop_scope = self.symbol_table.get_scope("loop")
+        if loop_scope is None:
+            print("Error at line {0}: Continue ouside of loop scope".format(node.line))
 
     def visit_ReturnStatement(self, node):
-        if node.value:
-            self.visit(node.value)
+        self.visit(node.value)
 
     def visit_Uminus(self, node):
-        return self.expr
+        return self.visit(node.expr)
+
+    def visit_Variable(self, node):
+        var = self.symbol_table.get(node.name)
+        if var is not None:
+            return var.type
+        else:
+            print("Error at line {0}: Variable {1} undeclared".format(node.line, node.name))
+            return None
 
     def visit_Transposition(self, node):
-        matrix = self.node
-
-        if not isinstance(matrix, tuple):
-            # error
-            print_error('wrong transposition', node.line_no)
-        return (matrix[1], matrix[0], matrix[2])
+        type1 = self.visit(node.mat)
+        if isinstance(type1, VectorType):
+            return VectorType(width=type1.height, height=type1.width, type=type1)
+        else:
+            print("Error at line {0}: Can only transpose matrix".format(node.line))
+            return None
 
     def visit_Gen(self, node):
-        pass
+        type1 = self.visit(node.arg)
+        if type1 == "int":
+            size = node.arg.value
+            return VectorType(width=size, height=size, type=type1)
+        else:
+            print("Error at line {0}: Function {1} argument must be int".format(node.line, node.func))
+            return None
 
+    def visit_IntNum(self, node):
+        return "int"
 
+    def visit_FloatNum(self, node):
+        return "float"
+
+    def visit_String(self, node):
+        return "str"

@@ -48,17 +48,29 @@ def p_empty_instruction(t):
     pass
 
 
-def p_expression_value(t):
-    """expression : INTEGER
-                  | FLOAT
-                  | matrix
-                  | STRING"""
+def p_expression_value1(t):
+    """expression : INTEGER"""
+    t[0] = IntNum(value=t[1])
+
+
+def p_expression_value2(t):
+    """expression : FLOAT"""
+    t[0] = FloatNum(value=t[1])
+
+
+def p_expression_value3(t):
+    """expression : matrix"""
     t[0] = t[1]
+
+
+def p_expression_value4(t):
+    """expression : STRING"""
+    t[0] = String(string=t[1])
 
 
 def p_expression_ID(t):
     """expression : ID"""
-    t[0] = Get(id=t[1], line=t.lineno(1))
+    t[0] = Variable(name=t[1], line=t.lineno(1))
 
 
 def p_group_expression(t):
@@ -68,7 +80,7 @@ def p_group_expression(t):
 
 def p_instructions_scope(t):
     """instruction : LCURLY instructions RCURLY"""
-    t[0] = Execute(instr=t[2])
+    t[0] = Scope(instr=t[2], line=t.lineno(1))
 
 
 def p_expression_binop(t):
@@ -120,7 +132,7 @@ def p_assign(t):
                     | ID MINUSASSIGN expression SEMICOLON
                     | ID TIMESASSIGN expression SEMICOLON
                     | ID DIVIDEASSIGN expression SEMICOLON"""
-    t[0] = Assign(left=Get(t[1]), op=t[2], right=t[3], line=t.lineno(1))
+    t[0] = Assign(left=Variable(t[1], line=t.lineno), op=t[2], right=t[3], line=t.lineno(1))
 
 
 def p_position_assign(t):
@@ -129,7 +141,7 @@ def p_position_assign(t):
                    | ID array MINUSASSIGN expression SEMICOLON
                    | ID array TIMESASSIGN expression SEMICOLON
                    | ID array DIVIDEASSIGN expression SEMICOLON"""  # A[0,1] = 5, etc.
-    t[0] = Arrassign(left=Get(t[1]), arr=t[2], op=t[3], right=t[4], line=t.lineno(1))
+    t[0] = Arrassign(left=Variable(t[1], line=t.lineno), arr=t[2], op=t[3], right=t[4], line=t.lineno(1))
 
 
 def p_if_else(t):
@@ -148,7 +160,7 @@ def p_while(t):
 
 def p_for(t):
     """instruction : FOR ID ASSIGN expression RANGE expression instruction"""
-    t[0] = ForLoop(id=Get(t[2]), expr=t[4], limit=t[6], instr=t[7], line=t.lineno(1))
+    t[0] = ForLoop(id=Variable(t[2], t.lineno), expr=t[4], limit=t[6], instr=t[7], line=t.lineno(1))
 
 
 def p_special_instruction(t):
@@ -156,9 +168,9 @@ def p_special_instruction(t):
                    | CONTINUE SEMICOLON
                    | RETURN expression SEMICOLON"""
     if t[1] == "break":
-        t[0] = BreakStatement()
+        t[0] = BreakStatement(line=t.lineno(1))
     elif t[1] == "continue":
-        t[0] = ContinueStatement()
+        t[0] = ContinueStatement(line=t.lineno(1))
     elif t[1] == "return":
         t[0] = ReturnStatement(value=t[2], line=t.lineno(1))
 
@@ -200,7 +212,7 @@ def p_list(t):
 
 def p_array_access(t):
     """expression : ID array"""  # A[0,1], B[1], etc.
-    t[0] = Access(id=Get(t[1]), arr=t[2], line=t.lineno(1))
+    t[0] = Access(id=Variable(t[1], line=t.lineno(1)), arr=t[2], line=t.lineno(1))
 
 
 parser = yacc.yacc()

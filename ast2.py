@@ -200,9 +200,9 @@ class ForLoop(Ast):
     #     return result
 
 
-class Get(Ast):
-    def __init__(self, id, line):
-        self.id = id
+class Variable(Ast):
+    def __init__(self, name, line):
+        self.name = name
         self.line = line
 
     # def execute(self):
@@ -212,14 +212,14 @@ class Get(Ast):
 
 class Matrix(Ast):
     def __init__(self, mat, line):
-        self.mat = mat
+        self.mat = np.array(mat)
         self.line = line
 
     # def execute(self):
     #     pass
 
 
-class Execute(Ast):
+class Scope(Ast):
     def __init__(self, instr, line):
         self.instr = instr
         self.line = line
@@ -234,8 +234,8 @@ class Execute(Ast):
     #     return result
 
 
-class BreakStatement(Ast, line):
-    def __init__(self):
+class BreakStatement(Ast):
+    def __init__(self, line):
         self.line = line
 
 
@@ -244,8 +244,8 @@ class BreakStatement(Ast, line):
     #     return result
 
 
-class ContinueStatement(Ast, line):
-    def __init__(self):
+class ContinueStatement(Ast):
+    def __init__(self, line):
         self.line = line
 
     # def execute(self):
@@ -253,8 +253,8 @@ class ContinueStatement(Ast, line):
     #     return result
 
 
-class ReturnStatement(Ast, line):
-    def __init__(self, value):
+class ReturnStatement(Ast):
+    def __init__(self, value, line):
         self.value = value
         self.line = line
 
@@ -297,4 +297,19 @@ class Gen(Ast):
     #     return result
 
 
+class IntNum(Ast):
+    def __init__(self, value, line_no=None):
+        self.value = value
+        self.line_no = line_no
 
+
+class FloatNum(Ast):
+    def __init__(self, value, line_no=None):
+        self.value = value
+        self.line_no = line_no
+
+
+class String(Ast):
+    def __init__(self, string, line_no=None):
+        self.string = string
+        self.line_no = line_no
