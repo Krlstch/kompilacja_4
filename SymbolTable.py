@@ -1,33 +1,46 @@
-class VariableSymbol(Symbol):
-
+class VariableSymbol:
     def __init__(self, name, type):
-        pass
-    #
+        self.name = name
+        self.type = type
+
+    def __str__(self):
+        return f"{self.name} : {self.type}"
 
 
 class SymbolTable(object):
-
-    def __init__(self, parent, name): # parent scope and symbol table name
-        pass
-    #
+    def __init__(self, parent, name): 
+        self.parent = parent
+        self.last_scope = 0
+        self.scopes = [({}, "global")]       # stack of scopes of variables (dicts)
+        self.name = name
 
     def put(self, name, symbol): # put variable symbol or fundef under <name> entry
-        pass
-    #
+        it = self.last_scope
+        self.scopes[it][0][name] = VariableSymbol(name, symbol)
 
     def get(self, name): # get variable symbol or fundef from <name> entry
-        pass
-    #
+        it = self.last_scope
+        while it >= 0:
+            if name in self.scopes[it][0]:
+                return self.scopes[it][0][name]
+            it -= 1
+        return None
+
+    def getScope(self, name):
+        it = self.last_scope
+        while it >= 0:
+            if self.scopes[it][1] == name:
+                return self.scopes[it]
+            it -= 1
+        return None
 
     def getParentScope(self):
-        pass
-    #
+        return self.parent
 
     def pushScope(self, name):
-        pass
-    #
+        self.scopes.append(({}, name))
+        self.last_scope += 1
 
     def popScope(self):
-        pass
-    #
-
+        self.scopes.pop()
+        self.last_scope -= 1

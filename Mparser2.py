@@ -30,7 +30,7 @@ def p_error(p):
 
 def p_program(t):
     """program : instructions"""
-    t[0] = Ast(params=t[1])
+    t[0] = Program(instr=t[1])
 
 
 def p_instructions(t):
@@ -58,7 +58,7 @@ def p_expression_value(t):
 
 def p_expression_ID(t):
     """expression : ID"""
-    t[0] = Get(params=t[1])
+    t[0] = Get(id=t[1], line=t.lineno(1))
 
 
 def p_group_expression(t):
@@ -68,7 +68,7 @@ def p_group_expression(t):
 
 def p_instructions_scope(t):
     """instruction : LCURLY instructions RCURLY"""
-    t[0] = Execute(params=t[2])
+    t[0] = Execute(instr=t[2])
 
 
 def p_expression_binop(t):
@@ -76,7 +76,7 @@ def p_expression_binop(t):
                   | expression MINUS expression
                   | expression TIMES expression
                   | expression DIVIDE expression"""
-    t[0] = Binop(params=[t[2], t[1], t[3]])
+    t[0] = Binop(left=t[1], op=t[2], right=t[3], line=t.lineno(1))
 
 
 def p_expression_binop_mat(t):
@@ -84,7 +84,7 @@ def p_expression_binop_mat(t):
                   | expression DOTMINUS expression
                   | expression DOTTIMES expression
                   | expression DOTDIVIDE expression"""
-    t[0] = BinopMat(params=[t[2], t[1], t[3]])
+    t[0] = BinopMat(left=t[1], op=t[2], right=t[3], line=t.lineno(1))
 
 
 def p_expression_relation(t):
@@ -94,24 +94,24 @@ def p_expression_relation(t):
                 | expression GREATEREQUAL expression
                 | expression NOTEQUAL expression
                 | expression EQUAL expression"""
-    t[0] = Relation(params=[t[2], t[1], t[3]])
+    t[0] = Relation(left=t[1], op=t[2], right=t[3], line=t.lineno(1))
 
 
 def p_uminus(t):
     """expression : MINUS expression %prec UMINUS"""
-    t[0] = Uminus(params=t[2])
+    t[0] = Uminus(expr=t[2], line=t.lineno(1))
 
 
 def p_trans(t):
     """matrix : expression TRANS"""
-    t[0] = Transposition(params=t[1])
+    t[0] = Transposition(mat=t[1], line=t.lineno(1))
 
 
 def p_matrix_gen(t):
     """matrix : ZEROS LPAREN expression RPAREN
               | ONES LPAREN expression RPAREN
               | EYE LPAREN expression RPAREN"""
-    t[0] = Gen(params=[t[1], t[3]])
+    t[0] = Gen(func=t[1], arg=t[3], line=t.lineno(1))
 
 
 def p_assign(t):
@@ -120,7 +120,7 @@ def p_assign(t):
                     | ID MINUSASSIGN expression SEMICOLON
                     | ID TIMESASSIGN expression SEMICOLON
                     | ID DIVIDEASSIGN expression SEMICOLON"""
-    t[0] = Assign(params=[t[2], t[1], t[3]])
+    t[0] = Assign(left=Get(t[1]), op=t[2], right=t[3], line=t.lineno(1))
 
 
 def p_position_assign(t):
@@ -129,26 +129,26 @@ def p_position_assign(t):
                    | ID array MINUSASSIGN expression SEMICOLON
                    | ID array TIMESASSIGN expression SEMICOLON
                    | ID array DIVIDEASSIGN expression SEMICOLON"""  # A[0,1] = 5, etc.
-    t[0] = Arrassign(params=[t[3], t[1], t[2], t[4]])
+    t[0] = Arrassign(left=Get(t[1]), arr=t[2], op=t[3], right=t[4], line=t.lineno(1))
 
 
 def p_if_else(t):
     """instruction : IF LPAREN condition RPAREN instruction %prec IFX
                   | IF LPAREN condition RPAREN instruction ELSE instruction"""
     if len(t) == 6:
-        t[0] = IfStatement(params=[t[3], t[5]])
+        t[0] = IfStatement(cond=t[3], instr=t[5], line=t.lineno(1))
     else:
-        t[0] = IfElseStatement(params=[t[3], t[5], t[7]])
+        t[0] = IfElseStatement(cond=t[3], instr=t[5], else_instr=t[7], line=t.lineno(1))
 
 
 def p_while(t):
     """instruction : WHILE LPAREN condition RPAREN instruction"""
-    t[0] = WhileLoop(params=[t[3], t[5]])
+    t[0] = WhileLoop(cond=t[3], instr=t[5], line=t.lineno(1))
 
 
 def p_for(t):
     """instruction : FOR ID ASSIGN expression RANGE expression instruction"""
-    t[0] = ForLoop(params=[t[2], t[4], t[6], t[7]])
+    t[0] = ForLoop(id=Get(t[2]), expr=t[4], limit=t[6], instr=t[7], line=t.lineno(1))
 
 
 def p_special_instruction(t):
@@ -160,17 +160,17 @@ def p_special_instruction(t):
     elif t[1] == "continue":
         t[0] = ContinueStatement()
     elif t[1] == "return":
-        t[0] = ReturnStatement(params=t[2])
+        t[0] = ReturnStatement(value=t[2], line=t.lineno(1))
 
 
 def p_print(t):
     """instruction : PRINT list SEMICOLON"""
-    t[0] = Print(params=t[2])
+    t[0] = Print(arg=t[2], line=t.lineno(1))
 
 
 def p_matrix(t):
     """matrix : LBRACET arraylist RBRACET"""
-    t[0] = Matrix(params=np.array(t[2]))
+    t[0] = Matrix(mat=t[2], line=t.lineno(1))
 
 
 def p_arraylist(t):
@@ -200,7 +200,7 @@ def p_list(t):
 
 def p_array_access(t):
     """expression : ID array"""  # A[0,1], B[1], etc.
-    t[0] = Access(params=[t[1], t[2]])
+    t[0] = Access(id=Get(t[1]), arr=t[2], line=t.lineno(1))
 
 
 parser = yacc.yacc()
