@@ -277,24 +277,11 @@ class Transposition(Ast):
         self.mat = mat
         self.line = line
 
-    # def execute(self):
-    #     result = np.transpose(Ast.resolve(self.params))
-    #     return result
-
-
 class Gen(Ast):
     def __init__(self, func, arg, line):
         self.func = func
         self.arg = arg
         self.line = line
-
-    # def execute(self):
-    #     result = {
-    #         'zeros': lambda a: np.zeros(shape=[a, a]),
-    #         'ones': lambda a: np.ones(shape=[a, a]),
-    #         'eye': lambda a: np.eye(a)
-    #     }[self.params[0]](Ast.resolve(self.params[1]))
-    #     return result
 
 
 class IntNum(Ast):

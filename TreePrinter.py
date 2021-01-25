@@ -220,7 +220,7 @@ class TreePrinter:
                 makeIndentation(indent)
                 print(x)
 
-    @addToClass(ast2.Get)
+    @addToClass(ast2.Variable)
     def printTree(self, indent=0):
         makeIndentation(indent)
         print(self.params)

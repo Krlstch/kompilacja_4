@@ -120,8 +120,8 @@ def p_trans(t):
 
 
 def p_matrix_gen(t):
-    """matrix : ZEROS LPAREN expression RPAREN
-              | ONES LPAREN expression RPAREN
+    """matrix : ZEROS LPAREN list RPAREN
+              | ONES LPAREN list RPAREN
               | EYE LPAREN expression RPAREN"""
     t[0] = Gen(func=t[1], arg=t[3], line=t.lineno(1))
 

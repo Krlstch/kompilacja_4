@@ -264,13 +264,30 @@ class TypeChecker(NodeVisitor):
             return None
 
     def visit_Gen(self, node):
-        type1 = self.visit(node.arg)
-        if type1 == "int":
-            size = node.arg.value
-            return VectorType(width=size, height=size, type=type1)
+        if node.func == "eye":
+            type1 = self.visit(node.arg)
+            if type1 == "int":
+                size = node.arg.value
+                return VectorType(width=size, height=size, type="int")
+            else:
+                print("Error at line {0}: Function {1} argument must be int".format(node.line, node.func))
+                return None
         else:
-            print("Error at line {0}: Function {1} argument must be int".format(node.line, node.func))
-            return None
+            if isinstance(node.arg, list):
+                if len(node.arg) == 2:
+                    type2 = self.visit(node.arg[0])
+                    type3 = self.visit(node.arg[1])
+                    if type2 == "int" and type3 == "int":
+                        return VectorType(width=node.arg[0].value, height=node.arg[1].value, type="int")
+                    else:
+                        print("Error at line {0}: Function {1} arguments must be int".format(node.line, node.func))
+                        return None
+                else:
+                    print("Error at line {0}: Function {1} must have 2 arguments".format(node.line, node.func))
+                    return None
+            else:
+                print("Error at line {0}: Function {1} must have 2 arguments".format(node.line, node.func))
+                return None
 
     def visit_IntNum(self, node):
         return "int"
