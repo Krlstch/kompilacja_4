@@ -2,70 +2,6 @@ from collections import defaultdict
 import ast2
 from SymbolTable import SymbolTable, VectorType
 
-ttype = defaultdict(lambda: defaultdict(lambda: defaultdict(str)))
-
-ttype['+']["int"]["int"] = "int"
-ttype['-']["int"]["int"] = "int"
-ttype['*']["int"]["int"] = "int"
-ttype['/']["int"]["int"] = "int"
-ttype[".+"]["int"]["int"] = "int"
-ttype[".-"]["int"]["int"] = "int"
-ttype[".*"]["int"]["int"] = "int"
-ttype["./"]["int"]["int"] = "int"
-ttype['<']["int"]["int"] = "logic"
-ttype['>']["int"]["int"] = "logic"
-ttype["<="]["int"]["int"] = "logic"
-ttype[">="]["int"]["int"] = "logic"
-ttype["=="]["int"]["int"] = "logic"
-ttype["!="]["int"]["int"] = "logic"
-
-ttype['+']["int"]["float"] = "float"
-ttype['-']["int"]["float"] = "float"
-ttype['*']["int"]["float"] = "float"
-ttype['/']["int"]["float"] = "float"
-ttype[".+"]["int"]["float"] = "float"
-ttype[".-"]["int"]["float"] = "float"
-ttype[".*"]["int"]["float"] = "float"
-ttype["./"]["int"]["float"] = "float"
-ttype['<']["int"]["float"] = "logic"
-ttype['>']["int"]["float"] = "logic"
-ttype["<="]["int"]["float"] = "logic"
-ttype[">="]["int"]["float"] = "logic"
-ttype["=="]["int"]["float"] = "logic"
-ttype["!="]["int"]["float"] = "logic"
-
-ttype['+']["float"]["int"] = "float"
-ttype['-']["float"]["int"] = "float"
-ttype['*']["float"]["int"] = "float"
-ttype['/']["float"]["int"] = "float"
-ttype[".+"]["float"]["int"] = "float"
-ttype[".-"]["float"]["int"] = "float"
-ttype[".*"]["float"]["int"] = "float"
-ttype["./"]["float"]["int"] = "float"
-ttype['<']["float"]["int"] = "logic"
-ttype['>']["float"]["int"] = "logic"
-ttype["<="]["float"]["int"] = "logic"
-ttype[">="]["float"]["int"] = "logic"
-ttype["=="]["float"]["int"] = "logic"
-ttype["!="]["float"]["int"] = "logic"
-
-ttype['+']["float"]["float"] = "float"
-ttype['-']["float"]["float"] = "float"
-ttype['*']["float"]["float"] = "float"
-ttype['/']["float"]["float"] = "float"
-ttype[".+"]["float"]["float"] = "float"
-ttype[".-"]["float"]["float"] = "float"
-ttype[".*"]["float"]["float"] = "float"
-ttype["./"]["float"]["float"] = "float"
-ttype['<']["float"]["float"] = "logic"
-ttype['>']["float"]["float"] = "logic"
-ttype["<="]["float"]["float"] = "logic"
-ttype[">="]["float"]["float"] = "logic"
-ttype["=="]["float"]["float"] = "logic"
-ttype["!="]["float"]["float"] = "logic"
-
-castable_operations = ['/', '+', '-', '*', '>', '<', ">=", "<=", "==", "!="]
-castable_matrix_operations = [".+", ".-", ".*", "./"]
 castable_types = ["int", "float"]
 
 
@@ -108,16 +44,20 @@ class TypeChecker(NodeVisitor):
 
     def visit_Assign(self, node):
         type2 = self.visit(node.right)
+        if type2 is None:
+            return None
         if node.op == '=':
             self.symbol_table.put(node.left.name, type2)
         else:
             type1 = self.visit(node.left)
-            if type1 == type2:
-                return
-            elif type1 == "int" and type2 == "float":
-                self.symbol_table.put(node.left.name, type2)
-            else:
-                print("Error at line {0}: Variables of incompatible types".format(node.line))
+            if type1 is None:
+                return None
+            if type1 != type2:
+                if type1 == "int" and type2 == "float":
+                    self.symbol_table.put(node.left.name, type2)
+                else:
+                    print("Error at line {0}: Variables of incompatible types".format(node.line))
+                    return None
 
     def visit_Arrassign(self, node):
         if len(node.arr) != 2:
@@ -125,29 +65,106 @@ class TypeChecker(NodeVisitor):
             return None
         arr_type0 = self.visit(node.arr[0])
         arr_type1 = self.visit(node.arr[1])
+
         if arr_type0 != "int" or arr_type1 != "int":
             print("Error at line {0}: Access array elements must be integers".format(node.line))
             return None
 
-        m_type = self.visit(node.left.mat[0][0])
+        type1 = self.visit(node.left)
+        if not isinstance(type1, VectorType):
+            print("Error at line {0}: Can only access element of matrix".format(node.line))
+            return None
+
+        m_type = type1.type
         type2 = self.visit(node.right)
-        if node.op == '=':
-            self.symbol_table.put(node.left.name, type2)
-        e
-            else:
-                print("Error at line {0}: Variables of incompatible types".format(node.line))
+        if type2 != m_type:
+            print("Error at line {0}: Variables of incompatible types".format(node.line))
 
     def visit_Access(self, node):
-        pass
+        if len(node.arr) != 2:
+            print("Error at line {0}: Access array must be of length 2".format(node.line))
+            return None
+        arr_type0 = self.visit(node.arr[0])
+        arr_type1 = self.visit(node.arr[1])
+
+        if arr_type0 != "int" or arr_type1 != "int":
+            print("Error at line {0}: Access array elements must be integers".format(node.line))
+            return None
+        type1 = self.visit(node.id)
+        if not isinstance(type1, VectorType):
+            print("Error at line {0}: Can only access element of matrix".format(node.line))
+            return None
+        return type1.type
 
     def visit_Binop(self, node):
-        pass
+        type1 = self.visit(node.left)
+        type2 = self.visit(node.right)
+        if type1 is None or type2 is None:
+            return None
+
+        if isinstance(type1, VectorType):
+            if not isinstance(type2, VectorType):
+                print("Error at line {0}: Variables of incompatible types".format(node.line))
+                return None
+            # Both matrix:
+            if node.op in ["+", "-"]:
+                if type1.width != type2.width or type1.height != type1.width:
+                    print("Error at line {0}: Matrices of incompatible sizes".format(node.line))
+                    return None
+                if type1.type != type2.type:
+                    print("Error at line {0}: Matrices of incompatible types".format(node.line))
+                    return None
+                return VectorType(width=type1.width, height=type1.height, type=type1.type)
+            if node.op == "*":
+                if type1.width != type2.height:
+                    print("Error at line {0}: Matrices of incompatible sizes".format(node.line))
+                if type1.type != type2.type:
+                    print("Error at line {0}: Matrices of incompatible types".format(node.line))
+                    return None
+                return VectorType(width=type2.width, height=type1.height, type=type1.type)
+            if node.op == "/":
+                print("Error at line {0}: Matrices can not be divided")
+                return None
+        if isinstance(type2, VectorType):
+            print("Error at line {0}: Variables of incompatible types".format(node.line))
+            return None
+        if type1 == "float" or type2 == "float":
+            return "float"
+        return "int"
 
     def visit_BinopMat(self, node):
-        pass
+        type1 = self.visit(node.left)
+        type2 = self.visit(node.right)
+        if type1 is None or type2 is None:
+            return None
+
+        if not isinstance(type1, VectorType) or not isinstance(type2, VectorType):
+            print("Error at line {0}: Binary operation can only be done for matrices".format(node.line))
+            return None
+
+        if type1.width != type2.width or type1.height != type1.width:
+            print("Error at line {0}: Matrices of incompatible sizes".format(node.line))
+            return None
+        if type1.type != type2.type:
+            print("Error at line {0}: Matrices of incompatible types".format(node.line))
+            return None
+
+        return VectorType(width=type1.width, height=type1.height, type=type1.type)
+
 
     def visit_Relation(self, node):
-        pass
+        type1 = self.visit(node.left)
+        type2 = self.visit(node.right)
+        if type1 is None or type2 is None:
+            return None
+
+        if type1 != type2 and not (type1 in castable_types and type2 in castable_types):
+            print("Error at line {0}: Variables of incompatible types".format(node.line))
+            return None
+        if isinstance(type1, VectorType) and node.op not in ["==", "!="]:
+            print("Error at line {0}: Can not compare two matrices".format(node.line))
+            return None
+        return "bool"
 
     def visit_IfStatement(self, node):
         type1 = self.visit(node.cond)
@@ -172,7 +189,6 @@ class TypeChecker(NodeVisitor):
             self.symbol_table.pop_scope()
         else:
             print("Error at line {0}: Condition in if statement must be boolean".format(node.line))
-
 
     def visit_WhileLoop(self, node):
         type1 = self.visit(node.cond)
@@ -202,10 +218,11 @@ class TypeChecker(NodeVisitor):
         for row in node.mat:
             if len(row) != row_len:
                 print("Error at line {0}: Matrix rows must have the same length ".format(node.line))
+                return None
             for element in row:
                 if self.visit(element) != m_type:
                     print("Error at line {0}: Matrix elements must be of the same type".format(node.line))
-
+                    return None
         return VectorType(width=row_len, height=rows_count, type=m_type)
 
     def visit_Scope(self, node):

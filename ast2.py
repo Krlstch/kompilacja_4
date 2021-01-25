@@ -212,7 +212,7 @@ class Variable(Ast):
 
 class Matrix(Ast):
     def __init__(self, mat, line):
-        self.mat = np.array(mat)
+        self.mat = mat
         self.line = line
 
     # def execute(self):
@@ -298,18 +298,18 @@ class Gen(Ast):
 
 
 class IntNum(Ast):
-    def __init__(self, value, line_no=None):
+    def __init__(self, value, line):
         self.value = value
-        self.line_no = line_no
+        self.line = line
 
 
 class FloatNum(Ast):
-    def __init__(self, value, line_no=None):
+    def __init__(self, value, line):
         self.value = value
-        self.line_no = line_no
+        self.line = line
 
 
 class String(Ast):
-    def __init__(self, string, line_no=None):
+    def __init__(self, string, line):
         self.string = string
-        self.line_no = line_no
+        self.line = line

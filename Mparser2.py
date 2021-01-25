@@ -50,12 +50,12 @@ def p_empty_instruction(t):
 
 def p_expression_value1(t):
     """expression : INTEGER"""
-    t[0] = IntNum(value=t[1])
+    t[0] = IntNum(value=t[1], line=t.lineno(1))
 
 
 def p_expression_value2(t):
     """expression : FLOAT"""
-    t[0] = FloatNum(value=t[1])
+    t[0] = FloatNum(value=t[1], line=t.lineno(1))
 
 
 def p_expression_value3(t):
@@ -65,7 +65,7 @@ def p_expression_value3(t):
 
 def p_expression_value4(t):
     """expression : STRING"""
-    t[0] = String(string=t[1])
+    t[0] = String(string=t[1], line=t.lineno(1))
 
 
 def p_expression_ID(t):
@@ -88,7 +88,7 @@ def p_expression_binop(t):
                   | expression MINUS expression
                   | expression TIMES expression
                   | expression DIVIDE expression"""
-    t[0] = Binop(left=t[1], op=t[2], right=t[3], line=t.lineno(1))
+    t[0] = Binop(left=t[1], op=t[2], right=t[3], line=t.lineno(2))
 
 
 def p_expression_binop_mat(t):
@@ -96,7 +96,7 @@ def p_expression_binop_mat(t):
                   | expression DOTMINUS expression
                   | expression DOTTIMES expression
                   | expression DOTDIVIDE expression"""
-    t[0] = BinopMat(left=t[1], op=t[2], right=t[3], line=t.lineno(1))
+    t[0] = BinopMat(left=t[1], op=t[2], right=t[3], line=t.lineno(2))
 
 
 def p_expression_relation(t):
@@ -132,7 +132,7 @@ def p_assign(t):
                     | ID MINUSASSIGN expression SEMICOLON
                     | ID TIMESASSIGN expression SEMICOLON
                     | ID DIVIDEASSIGN expression SEMICOLON"""
-    t[0] = Assign(left=Variable(t[1], line=t.lineno), op=t[2], right=t[3], line=t.lineno(1))
+    t[0] = Assign(left=Variable(t[1], line=t.lineno(1)), op=t[2], right=t[3], line=t.lineno(1))
 
 
 def p_position_assign(t):
@@ -141,7 +141,7 @@ def p_position_assign(t):
                    | ID array MINUSASSIGN expression SEMICOLON
                    | ID array TIMESASSIGN expression SEMICOLON
                    | ID array DIVIDEASSIGN expression SEMICOLON"""  # A[0,1] = 5, etc.
-    t[0] = Arrassign(left=Variable(t[1], line=t.lineno), arr=t[2], op=t[3], right=t[4], line=t.lineno(1))
+    t[0] = Arrassign(left=Variable(t[1], line=t.lineno(1)), arr=t[2], op=t[3], right=t[4], line=t.lineno(1))
 
 
 def p_if_else(t):
@@ -160,7 +160,7 @@ def p_while(t):
 
 def p_for(t):
     """instruction : FOR ID ASSIGN expression RANGE expression instruction"""
-    t[0] = ForLoop(id=Variable(t[2], t.lineno), expr=t[4], limit=t[6], instr=t[7], line=t.lineno(1))
+    t[0] = ForLoop(id=Variable(t[2], t.lineno(1)), expr=t[4], limit=t[6], instr=t[7], line=t.lineno(1))
 
 
 def p_special_instruction(t):
